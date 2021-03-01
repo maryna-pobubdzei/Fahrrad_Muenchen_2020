@@ -1,122 +1,55 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Feb  5 16:20:32 2021
+
 @author: katha
 """
-
-# Offene Fragen
+#--------------------------------------------------------------------
+# change directory
+#--------------------------------------------------------------------
+import os
+os.chdir(r"C:\Users\katha\OneDrive\Dokumente\GitHub\Fahrrad_Muenchen_2020")
+######### change directory #############
 #--------------------------------------------------------------------
 # import modules
 #--------------------------------------------------------------------
 import matplotlib.pyplot as plt
 import pandas as pd
-
-import pylab as pl
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sklearn import linear_model
 from patsy import dmatrices
 import seaborn as sns
 from scipy import stats
-import additional_functions
+from additional_functions import *
 
 #--------------------------------------------------------------------
 # import data
 #--------------------------------------------------------------------
 df = pd.read_excel(io=r'C:\Users\katha\OneDrive\Dokumente\Projekte\Fahrrad\01_Tageweise-Auswertung_StandDez2020.xlsx', sheet_name="Original")
-# enter your own path here
-
-#--------------------------------------------------------------------
-# clean data
-#--------------------------------------------------------------------
-df = df[df['zaehlstelle']!='Kreuther'].reset_index(drop = True)
-
-#--------------------------------------------------------------------
 # take a look at the dataset
-#--------------------------------------------------------------------
+df['C(zaehlstelle)'] = df['zaehlstelle']
+df['log_niederschlag'] = np.log(df['niederschlag']+1)
 df.head()
-df.columns
-print(np.mean(df))
-print(np.std(df))
-sns.distplot(df.gesamt) # normally distributed?
-sns.distplot(df.min_temp) 
-sns.distplot(df.max_temp) 
-sns.distplot(df.niederschlag) 
-sns.distplot(df.bewoelkung) 
-sns.distplot(df.sonnenstunden) 
+np.mean(df)
+np.std(df)
 
-#--------------------------------------------------------------------
-# transform variables
-#--------------------------------------------------------------------
-df['C(zaehlstelle)'] = df['zaehlstelle'] # change name to make regression easier
-#from datetime import date
-import holidays
-bavarian_holidays = holidays.CountryHoliday('DE', prov='BY')
-df = df.assign(holiday = np.nan)
-df = df.assign(weekday = np.nan)
-for i,day in enumerate(df.datum):
-    df['weekday'][i] = day.day_name()
-    df['holiday'][i] = day in bavarian_holidays
-
-df.head()
-print(np.mean(df))
-print(np.std(df))
-#ndf = df[['gesamt', 'min_temp','max_temp','niederschlag','bewoelkung', 'sonnenstunden']]
-
-#--------------------------------------------------------------------
-# plot time course
-#--------------------------------------------------------------------
-df.set_index('datum', inplace=True)
-ax = df['niederschlag'].plot()
-ticklabels = df.index.strftime('%Y-%m-%d')
-ax.xaxis.set_major_formatter(ticker.FixedFormatter(ticklabels))
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
-plt.show()
-
-ax = df['min_temp'].plot()
-ticklabels = df.index.strftime('%Y-%m-%d')
-ax.xaxis.set_major_formatter(ticker.FixedFormatter(ticklabels))
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
-plt.show()
-
-ax = df['max_temp'].plot()
-ticklabels = df.index.strftime('%Y-%m-%d')
-ax.xaxis.set_major_formatter(ticker.FixedFormatter(ticklabels))
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
-plt.show()
-
-ax = df['bewoelkung'].plot()
-ticklabels = df.index.strftime('%Y-%m-%d')
-ax.xaxis.set_major_formatter(ticker.FixedFormatter(ticklabels))
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
-plt.show()
-
-ax = df['sonnenstunden'].plot()
-ticklabels = df.index.strftime('%Y-%m-%d')
-ax.xaxis.set_major_formatter(ticker.FixedFormatter(ticklabels))
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
-plt.show()
-
-ax = df['gesamt'].plot()
-ticklabels = df.index.strftime('%Y-%m-%d')
-ax.xaxis.set_major_formatter(ticker.FixedFormatter(ticklabels))
-ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
-plt.show()
 #--------------------------------------------------------------------
 # Requirement: is our dependent variable normally distributed?
 #--------------------------------------------------------------------
+np.mean(df.gesamt)
+np.std(df.gesamt)  
 sns.distplot(df.gesamt) # clear right skww
 sns.distplot(np.log(df.gesamt+1)) # log transform
 sns.distplot((df.gesamt)**(1./2.)) # sqrt transform
 sns.distplot((df.gesamt)**(1./3.)) # cube transform
 # best transform is cube transform (based on visual inspection)
 df['gesamt3'] = df.gesamt ** (1./3.)
+ndf = df[['gesamt', 'gesamt3','min_temp','max_temp','niederschlag','bewoelkung', 'sonnenstunden']]
 scaler = StandardScaler()
 # fit and transform the data
-ndf = df[['gesamt', 'gesamt3']]
 zndf = scaler.fit_transform(ndf) 
 zdf_1 = pd.DataFrame(zndf, columns = ndf.columns)
-zdf_2 = df[['C(zaehlstelle)', 'zaehlstelle', 'min_temp','max_temp','niederschlag','bewoelkung', 'sonnenstunden']]
+zdf_2 = df[['datum', 'C(zaehlstelle)', 'zaehlstelle']]
 zdf = zdf_2.join(zdf_1)
 zdf.tail(10)
 sns.distplot(zdf.gesamt) # cube transform
@@ -127,7 +60,7 @@ k2 , p = stats.normaltest(zdf.gesamt3) # überhaupt nicht normalverteilt :(
 
 # Und wenn wir Kreuther rauslassen
 df_rm = df[df['zaehlstelle']!='Kreuther']
-ndf = df_rm[['gesamt', 'gesamt3','min_temp','max_temp','log_niederschlag','bewoelkung', 'sonnenstunden']]
+ndf = df_rm[['gesamt', 'gesamt3','min_temp','max_temp','niederschlag','bewoelkung', 'sonnenstunden']]
 scaler = StandardScaler()
 # fit and transform the data
 zndf = scaler.fit_transform(ndf) 
@@ -139,8 +72,8 @@ k2 , p = stats.normaltest(zdf.gesamt3)
 sns.distplot(zdf.gesamt3) # cube transform
 ax = sns.boxplot(x="zaehlstelle", y="gesamt3", data=zdf)
 
-np.mean(zdf)
-np.std(zdf)
+print(np.mean(zdf))
+print(np.std(zdf))
 
 #--------------------------------------------------------------------
 # First visual inspection of association with Fahrradaufkommen
@@ -150,7 +83,7 @@ ax = sns.boxplot(x="zaehlstelle", y="gesamt3", data=zdf)
 
 
 # Niederschlag
-plt.scatter( zdf.niederschlag,zdf.gesamt3,  color='blue')
+plt.scatter( np.log(zdf.niederschlag),zdf.gesamt3,  color='blue')
 plt.xlabel("Niederschlag")
 plt.ylabel("Fahrradaufkommen")
 plt.show()
@@ -176,7 +109,7 @@ plt.show()
 # split data
 #--------------------------------------------------------------------
 
-msk = np.random.rand(len(zdf)) < 0.2
+msk = np.random.rand(len(zdf)) < 0.8
 train = zdf[msk]
 test = zdf[~msk]
 
@@ -279,37 +212,35 @@ sns.scatterplot(data=train, x="sonnenstunden", y="gesamt3", hue="zaehlstelle")
 B_sonnenstunden = (final_model.params[5]*np.std(df_rm.sonnenstunden)*std_gesamt3) **3
 print("Pro Tag sind mit jeder zusätzlichen Sonnenstunde " + str(B_sonnenstunden) + " Fahrräder zusätzlich auf den Straßen, wenn alle anderen Bedingungen gleich bleiben")
 
-sns.scatterplot(data=df_rm, x="min_temp", y="gesamt", hue="zaehlstelle")
+#sns.scatterplot(data=df_rm, x="min_temp", y="gesamt", hue="zaehlstelle")
 sns.scatterplot(data=train, x="min_temp", y="gesamt3", hue="zaehlstelle")
 B_min_temp = (final_model.params[10]*np.std(df_rm.min_temp)*std_gesamt3) **3
 print("Pro Tag sind mit jeder 1°C Temperatursteigerung " + str(B_min_temp) + " Fahrräder zusätzlich auf den Straßen, wenn alle anderen Bedingungen gleich bleiben")
 
 
-sns.scatterplot(data=df_rm, x="log_niederschlag", y="gesamt", hue="zaehlstelle")
-sns.scatterplot(data=train, x="log_niederschlag", y="gesamt3", hue="zaehlstelle")
+#sns.scatterplot(data=df_rm, x="niederschlag", y="gesamt", hue="zaehlstelle")
+sns.scatterplot(data=train, x="niederschlag", y="gesamt3", hue="zaehlstelle")
 B_min_temp = (final_model.params[10]*np.std(df_rm.min_temp)*std_gesamt3) **3
 print("Pro Tag sind mit jeder 1°C Temperatursteigerung " + str(B_min_temp) + " Fahrräder zusätzlich auf den Straßen, wenn alle anderen Bedingungen gleich bleiben")
 
 
-sns.scatterplot(data=train, x="log_niederschlag", y="gesamt3", hue="zaehlstelle")
+sns.scatterplot(data=train, x="niederschlag", y="gesamt3", hue="zaehlstelle")
 (np.exp(final_model.params[17]*std_gesamt3)-1) **3 # niederschlag
 
 
 
-
-
-
-
-
+###############
 # test data set 
-from sklearn.metrics import r2_score
+###############
 
-test_x = np.asanyarray(test[['ENGINESIZE']])
-test_y = np.asanyarray(test[['CO2EMISSIONS']])
-score = final_model.predict(test)
-print("R2-score: %.2f" % r2_score(test[['gesamt3']] , score) )
+#from sklearn.metrics import r2_score
+
+#test_x = np.asanyarray(test[['ENGINESIZE']])
+#test_y = np.asanyarray(test[['CO2EMISSIONS']])
+#score = final_model.predict(test)
+#print("R2-score: %.2f" % r2_score(test[['gesamt3']] , score) )
 
 
 
 
-###############    
+    
