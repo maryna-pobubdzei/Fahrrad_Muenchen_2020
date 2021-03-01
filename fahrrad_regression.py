@@ -55,23 +55,7 @@ zdf.tail(10)
 sns.distplot(zdf.gesamt) # cube transform
 sns.distplot(zdf.gesamt3) # cube transform
 k2 , p = stats.normaltest(zdf.gesamt3) # überhaupt nicht normalverteilt :( 
-
-
-
-# Und wenn wir Kreuther rauslassen
-df_rm = df[df['zaehlstelle']!='Kreuther']
-ndf = df_rm[['gesamt', 'gesamt3','min_temp','max_temp','niederschlag','bewoelkung', 'sonnenstunden']]
-scaler = StandardScaler()
-# fit and transform the data
-zndf = scaler.fit_transform(ndf) 
-zdf_1 = pd.DataFrame(zndf, columns = ndf.columns)
-zdf_2 = df_rm[['datum', 'C(zaehlstelle)', 'zaehlstelle']].reset_index()
-zdf = zdf_2.join(zdf_1)
-zdf.tail(10)
-k2 , p = stats.normaltest(zdf.gesamt3)
-sns.distplot(zdf.gesamt3) # cube transform
 ax = sns.boxplot(x="zaehlstelle", y="gesamt3", data=zdf)
-
 print(np.mean(zdf))
 print(np.std(zdf))
 
