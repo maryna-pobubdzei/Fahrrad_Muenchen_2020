@@ -4,6 +4,10 @@ Created on Fri Feb  5 16:20:32 2021
 
 @author: katha
 """
+
+# Info zu den Daten
+# https://www.opengov-muenchen.de/dataset/raddauerzaehlstellen-muenchen/resource/211e882d-fadd-468a-bf8a-0014ae65a393?view_id=11a47d6c-0bc1-4bfa-93ea-126089b59c3d
+
 #--------------------------------------------------------------------
 # change directory
 #--------------------------------------------------------------------
@@ -21,43 +25,59 @@ from patsy import dmatrices
 import seaborn as sns
 from scipy import stats
 from additional_functions import *
+from statsmodels.formula.api import ols
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 #--------------------------------------------------------------------
 # import data
 #--------------------------------------------------------------------
 df = pd.read_excel(io=r'C:\Users\katha\OneDrive\Dokumente\Projekte\Fahrrad\01_Tageweise-Auswertung_StandDez2020.xlsx', sheet_name="Original")
 # take a look at the dataset
+df = df[df['zaehlstelle']!='Kreuther']
+df = df.reset_index(drop = True)
 df['C(zaehlstelle)'] = df['zaehlstelle']
-df['log_niederschlag'] = np.log(df['niederschlag']+1)
+#df['log_niederschlag'] = np.log(df['niederschlag']+1)
 df.head()
-np.mean(df)
-np.std(df)
+print(np.mean(df))
+print(np.std(df))
+
+#--------------------------------------------------------------------
+# Optional: are our independent variables normally distributed?
+#--------------------------------------------------------------------
+sns.distplot(np.log(zdf.niederschlag + 1)) #
+
+sns.distplot(df.min_temp) # 
+sns.distplot(df.sonnenstunden) # 
+sns.distplot(df.niederschlag) # 
 
 #--------------------------------------------------------------------
 # Requirement: is our dependent variable normally distributed?
 #--------------------------------------------------------------------
-np.mean(df.gesamt)
-np.std(df.gesamt)  
+print(np.mean(df.gesamt))
+print(np.std(df.gesamt)) 
 sns.distplot(df.gesamt) # clear right skww
 sns.distplot(np.log(df.gesamt+1)) # log transform
 sns.distplot((df.gesamt)**(1./2.)) # sqrt transform
 sns.distplot((df.gesamt)**(1./3.)) # cube transform
 # best transform is cube transform (based on visual inspection)
 df['gesamt3'] = df.gesamt ** (1./3.)
-ndf = df[['gesamt', 'gesamt3','min_temp','max_temp','niederschlag','bewoelkung', 'sonnenstunden']]
+ndf = df[['gesamt', 'gesamt3']]
 scaler = StandardScaler()
 # fit and transform the data
 zndf = scaler.fit_transform(ndf) 
 zdf_1 = pd.DataFrame(zndf, columns = ndf.columns)
-zdf_2 = df[['datum', 'C(zaehlstelle)', 'zaehlstelle']]
+zdf_2 = df[['datum', 'C(zaehlstelle)', 'zaehlstelle','min_temp','max_temp','niederschlag','bewoelkung', 'sonnenstunden']]
 zdf = zdf_2.join(zdf_1)
 zdf.tail(10)
 sns.distplot(zdf.gesamt) # cube transform
 sns.distplot(zdf.gesamt3) # cube transform
 k2 , p = stats.normaltest(zdf.gesamt3) # überhaupt nicht normalverteilt :( 
+print(p)
 ax = sns.boxplot(x="zaehlstelle", y="gesamt3", data=zdf)
 print(np.mean(zdf))
 print(np.std(zdf))
+
+
 
 #--------------------------------------------------------------------
 # First visual inspection of association with Fahrradaufkommen
@@ -67,7 +87,7 @@ ax = sns.boxplot(x="zaehlstelle", y="gesamt3", data=zdf)
 
 
 # Niederschlag
-plt.scatter( np.log(zdf.niederschlag),zdf.gesamt3,  color='blue')
+plt.scatter( (zdf.niederschlag),zdf.gesamt3,  color='blue')
 plt.xlabel("Niederschlag")
 plt.ylabel("Fahrradaufkommen")
 plt.show()
@@ -100,10 +120,8 @@ test = zdf[~msk]
 #--------------------------------------------------------------------
 # Model selection: Multicollinearity
 #--------------------------------------------------------------------
-from statsmodels.formula.api import ols
 fit = ols('gesamt3 ~ C(zaehlstelle)  + min_temp + max_temp + niederschlag + sonnenstunden', data=train).fit() 
 fit.summary()
-from statsmodels.stats.outliers_influence import variance_inflation_factor
 features = "+".join(['min_temp', 'max_temp', 'niederschlag',    'bewoelkung', 'sonnenstunden'])
 y, X = dmatrices('gesamt3 ~ ' + features, train, return_type='dataframe')
 vif = pd.DataFrame()
@@ -177,11 +195,17 @@ while model.bic < best_model_so_far.bic:
 
 final_model = best_model_so_far
 final_model.summary()
-
+print(iterations_log)
 #--------------------------------------------------------------------
 # interpreting the coefficients
 #--------------------------------------------------------------------
-#
+# units of variables
+# min_temp & max_temp = °C
+# sonnenstunden = stunden
+# niederschlag: 
+# bewoelkung: %
+
+
 std_gesamt3 = np.std(df_rm.gesamt3)
 parameters = dict(final_model.params)
 pvals = dict(final_model.pvalues)
@@ -228,3 +252,11 @@ sns.scatterplot(data=train, x="niederschlag", y="gesamt3", hue="zaehlstelle")
 
 
     
+#--------------------------------------------------------------------
+# time course 
+#--------------------------------------------------------------------
+df[['datum', 'min_temp', 'max_temp']].set_index('datum').plot()
+df[['datum', 'min_temp', 'sonnenstunden']].set_index('datum').plot()
+df[['datum', 'min_temp', 'niederschlag']].set_index('datum').plot()
+df[['datum', 'min_temp', 'bewoelkung']].set_index('datum').plot()
+
