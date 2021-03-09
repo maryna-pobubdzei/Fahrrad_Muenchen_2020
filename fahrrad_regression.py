@@ -18,6 +18,8 @@ Created on Fri Feb  5 16:20:32 2021
 #--------------------------------------------------------------------
 import os
 os.chdir(r"C:\Users\katha\OneDrive\Dokumente\GitHub\Fahrrad_Muenchen_2020")
+#os.chdir(r"C:\Users\Maryna\OneDrive\Dokumente\GitHub\Fahrrad_Muenchen_2020")
+
 ######### change directory #############
 #--------------------------------------------------------------------
 # import modules
