@@ -17,8 +17,8 @@ Created on Fri Feb  5 16:20:32 2021
 # change directory
 #--------------------------------------------------------------------
 import os
-os.chdir(r"C:\Users\katha\OneDrive\Dokumente\GitHub\Fahrrad_Muenchen_2020")
-#os.chdir(r"C:\Users\Maryna\OneDrive\Dokumente\GitHub\Fahrrad_Muenchen_2020")
+#os.chdir(r"C:\Users\katha\OneDrive\Dokumente\GitHub\Fahrrad_Muenchen_2020")
+os.chdir(r"C:\Users\Maryna\Documents\GitHub\Fahrrad_Muenchen_2020")
 
 ######### change directory #############
 #--------------------------------------------------------------------
@@ -38,16 +38,26 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 #--------------------------------------------------------------------
 # import data
 #--------------------------------------------------------------------
-df = pd.read_excel(io=r'C:\Users\katha\OneDrive\Dokumente\Projekte\Fahrrad\01_Tageweise-Auswertung_StandDez2020.xlsx', sheet_name="Original")
+df = pd.read_excel(io=r'.\01_Tageweise-Auswertung_StandDez2020.xlsx', sheet_name="Original")
 # take a look at the dataset
 df = df[df['zaehlstelle']!='Kreuther']
 df = df.reset_index(drop = True)
 df['C(zaehlstelle)'] = df['zaehlstelle']
 df['cbewoelkung'] = df['bewoelkung'] 
 df.loc[df['bewoelkung'] <= 20, 'cbewoelkung'] = '0wenig' 
-df.loc[(df['bewoelkung'] >= 21) & (df['bewoelkung'] <= 91), 'cbewoelkung'] = '1mittel' 
-df.loc[df['bewoelkung'] >= 90, 'cbewoelkung'] = '2viel' 
+df.loc[(df['bewoelkung'] > 20) & (df['bewoelkung'] <= 90), 'cbewoelkung'] = '1mittel' 
+df.loc[df['bewoelkung'] > 90, 'cbewoelkung'] = '2viel' 
 
+df['cniederschlag'] = df['niederschlag'] 
+df.loc[df['niederschlag'] <= 0, 'cniederschlag'] = '0kein' 
+df.loc[(df['niederschlag'] > 0) & (df['niederschlag'] <= 2,5), 'cniederschlag'] = '1wenig' 
+df.loc[(df['niederschlag'] > 2.5) & (df['niederschlag'] <= 10), 'cniederschlag'] = '2mittel' 
+df.loc[df['niederschlag'] > 10, 'cniederschlag'] = '3viel' 
+
+df['csonnenstunden'] = df['sonnenstunden'] 
+df.loc[df['sonnenstunden'] <= 2.5, 'csonnenstunden'] = '0wenig' 
+df.loc[(df['sonnenstunden'] > 2.5) & (df['sonnenstunden'] <= 5), 'csonnenstunden'] = '1mittel' 
+df.loc[df['sonnenstunden'] > 5, 'csonnenstunden'] = '2viel' 
 
 df.head()
 print(np.mean(df))
@@ -56,7 +66,6 @@ print(np.std(df))
 #--------------------------------------------------------------------
 # Optional: are our independent variables normally distributed?
 #--------------------------------------------------------------------
-sns.distplot(np.log(zdf.niederschlag + 1)) #
 
 sns.distplot(df.min_temp) # 
 sns.distplot(df.sonnenstunden) # 
@@ -102,7 +111,7 @@ ax = sns.boxplot(x="zaehlstelle", y="gesamt3", data=zdf)
 
 
 # Niederschlag
-plt.scatter( (zdf.niederschlag),zdf.gesamt3,  color='blue')
+plt.scatter( zdf.niederschlag, zdf.gesamt3,  color='blue')
 plt.xlabel("Niederschlag")
 plt.ylabel("Fahrradaufkommen")
 plt.show()
@@ -143,7 +152,7 @@ test = zdf[~msk]
 #--------------------------------------------------------------------
 # Model selection: Multicollinearity
 #--------------------------------------------------------------------
-features = "+".join(['min_temp', 'max_temp', 'niederschlag',    'cbewoelkung', 'sonnenstunden'])
+features = "+".join(['min_temp', 'max_temp', 'cniederschlag',    'cbewoelkung', 'sonnenstunden'])
 y, X = dmatrices('gesamt3 ~ ' + features, train, return_type='dataframe')
 vif = pd.DataFrame()
 vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
@@ -151,7 +160,7 @@ vif["features"] = X.columns
 vif.round(1)
 
 # throw out vif > 4
-features = "+".join(['min_temp', 'niederschlag',  'cbewoelkung', 'sonnenstunden'])
+features = "+".join(['min_temp', 'cniederschlag',  'cbewoelkung', 'sonnenstunden'])
 y, X = dmatrices('gesamt3 ~ ' + features, train, return_type='dataframe')
 vif = pd.DataFrame()
 vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
@@ -159,7 +168,7 @@ vif["features"] = X.columns
 vif.round(1)
 # we are thwoing out max temperature
 
-features = "+".join(['min_temp', 'niederschlag',  'cbewoelkung'])
+features = "+".join(['min_temp', 'cniederschlag',  'cbewoelkung'])
 y, X = dmatrices('gesamt3 ~ ' + features, train, return_type='dataframe')
 vif = pd.DataFrame()
 vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
@@ -173,7 +182,7 @@ vif.round(1)
 i = 0
 iterations_log = ""
 # 1 fit initial full model
-rtrain = train[['gesamt3', 'min_temp', 'niederschlag', 'cbewoelkung']] # get variables of interest
+rtrain = train[['gesamt3', 'min_temp', 'cniederschlag', 'cbewoelkung']] # get variables of interest
 features = "*".join(rtrain.columns[1:])
 y = 'gesamt3'
 first_model = ols(y + '~' + features, data=rtrain).fit()  # fit complete model
@@ -270,7 +279,7 @@ D_bewoelkung = ( B_bewoelkung) **3
 print("Pro Tag sind mit jedem " + str(delta_bewoelkung) + " % mehr Bewoelkung " + str(D_bewoelkung) + " Fahrräder weniger auf den Straßen, wenn alle anderen Bedingungen gleich bleiben")
 
 
-B_bewoelkung = final_model.params[list(parameters.keys()).index('cbewoelkung[T.2viel]')]* delta_bewoelkung + 
+B_bewoelkung = final_model.params[list(parameters.keys()).index('cbewoelkung[T.2viel]')]* delta_bewoelkung 
 D_bewoelkung = ( B_bewoelkung) **3
 print("Pro Tag sind mit jedem " + str(delta_bewoelkung) + " % mehr Bewoelkung " + str(D_bewoelkung) + " Fahrräder weniger auf den Straßen, wenn alle anderen Bedingungen gleich bleiben")
 
