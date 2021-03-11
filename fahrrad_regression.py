@@ -258,9 +258,9 @@ print("Pro Tag sind mit jeder " + str(delta_temp) + "°C Temperatursteigerung " 
 #print("Pro Tag sind mit jeder " + str(delta_temp) + "°C Temperatursteigerung " + str(D_temp) + " Fahrräder zusätzlich auf den Straßen, wenn alle anderen Bedingungen gleich bleiben und bei " + str(sonnenstunden) + "Sonnenstunden")
 
 # Niederschlag Main Effect
-sns.scatterplot(data=train, x="niederschlag", y="gesamt3")
+sns.scatterplot(data=train, x="cniederschlag", y="gesamt3")
 delta_niederschlag = 10
-B_niederschlag = final_model.params[list(parameters.keys()).index('niederschlag')] * delta_niederschlag
+B_niederschlag = final_model.params[list(parameters.keys()).index('cniederschlag')] * delta_niederschlag
 D_niederschlag = ( B_niederschlag) **3
 print("Pro Tag sind mit jedem " + str(delta_niederschlag) + "mm mehr Regen " + str(D_niederschlag) + " Fahrräder weniger auf den Straßen, wenn alle anderen Bedingungen gleich bleiben")
 
