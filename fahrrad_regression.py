@@ -43,21 +43,22 @@ df = pd.read_excel(io=r'.\01_Tageweise-Auswertung_StandDez2020.xlsx', sheet_name
 df = df[df['zaehlstelle']!='Kreuther']
 df = df.reset_index(drop = True)
 df['C(zaehlstelle)'] = df['zaehlstelle']
+
 df['cbewoelkung'] = df['bewoelkung'] 
-df.loc[df['bewoelkung'] <= 20, 'cbewoelkung'] = '0wenig' 
-df.loc[(df['bewoelkung'] > 20) & (df['bewoelkung'] <= 90), 'cbewoelkung'] = '1mittel' 
-df.loc[df['bewoelkung'] > 90, 'cbewoelkung'] = '2viel' 
+df.loc[df['bewoelkung'] <= 20, 'cbewoelkung'] = '0wenig_bewoelkung' 
+df.loc[(df['bewoelkung'] > 20) & (df['bewoelkung'] <= 90), 'cbewoelkung'] = '1mittel_bewoelkung' 
+df.loc[df['bewoelkung'] > 90, 'cbewoelkung'] = '2viel_bewoelkung' 
 
 df['cniederschlag'] = df['niederschlag'] 
-df.loc[df['niederschlag'] <= 0, 'cniederschlag'] = '0kein' 
-df.loc[(df['niederschlag'] > 0) & (df['niederschlag'] <= 2,5), 'cniederschlag'] = '1wenig' 
-df.loc[(df['niederschlag'] > 2.5) & (df['niederschlag'] <= 10), 'cniederschlag'] = '2mittel' 
-df.loc[df['niederschlag'] > 10, 'cniederschlag'] = '3viel' 
+df.loc[df['niederschlag'] <= 0, 'cniederschlag'] = '0kein_niederschlag' 
+df.loc[(df['niederschlag'] > 0) & (df['niederschlag'] <= 2.5), 'cniederschlag'] = '1wenig_niederschlag' 
+df.loc[(df['niederschlag'] > 2.5) & (df['niederschlag'] <= 10), 'cniederschlag'] = '2mittel_niederschlag' 
+df.loc[df['niederschlag'] > 10, 'cniederschlag'] = '3viel_niederschlag' 
 
 df['csonnenstunden'] = df['sonnenstunden'] 
-df.loc[df['sonnenstunden'] <= 2.5, 'csonnenstunden'] = '0wenig' 
-df.loc[(df['sonnenstunden'] > 2.5) & (df['sonnenstunden'] <= 5), 'csonnenstunden'] = '1mittel' 
-df.loc[df['sonnenstunden'] > 5, 'csonnenstunden'] = '2viel' 
+df.loc[df['sonnenstunden'] <= 2.5, 'csonnenstunden'] = '0wenig_sonnenstunden' 
+df.loc[(df['sonnenstunden'] > 2.5) & (df['sonnenstunden'] <= 5), 'csonnenstunden'] = '1mittel_sonnenstunden' 
+df.loc[df['sonnenstunden'] > 5, 'csonnenstunden'] = '2viel_sonnenstunden' 
 
 df.head()
 print(np.mean(df))
@@ -117,7 +118,7 @@ plt.ylabel("Fahrradaufkommen")
 plt.show()
 
 # Temperatur
-plt.scatter( zdf.min_temp    ,zdf.gesamt3,  color='blue')
+plt.scatter( zdf.min_temp, zdf.gesamt3,  color='blue')
 plt.xlabel("min_temp")
 plt.ylabel("Fahrradaufkommen")
 plt.show()
@@ -128,14 +129,14 @@ plt.ylabel("Fahrradaufkommen")
 plt.show()
 
 # Sonnenstunden
-plt.scatter( zdf.sonnenstunden    ,zdf.gesamt3,  color='blue')
+plt.scatter( zdf.sonnenstunden, zdf.gesamt3,  color='blue')
 plt.xlabel("sonnenstunden")
 plt.ylabel("Fahrradaufkommen")
 plt.show()
 
 
 # Sonnenstunden
-plt.scatter( zdf.bewoelkung    ,zdf.gesamt3,  color='blue')
+plt.scatter( zdf.bewoelkung, zdf.gesamt3,  color='blue')
 plt.xlabel("bewölkung")
 plt.ylabel("Fahrradaufkommen")
 plt.show()
@@ -152,7 +153,7 @@ test = zdf[~msk]
 #--------------------------------------------------------------------
 # Model selection: Multicollinearity
 #--------------------------------------------------------------------
-features = "+".join(['min_temp', 'max_temp', 'cniederschlag',    'cbewoelkung', 'sonnenstunden'])
+features = "+".join(['min_temp', 'max_temp', 'cniederschlag',    'cbewoelkung', 'csonnenstunden'])
 y, X = dmatrices('gesamt3 ~ ' + features, train, return_type='dataframe')
 vif = pd.DataFrame()
 vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
@@ -160,7 +161,7 @@ vif["features"] = X.columns
 vif.round(1)
 
 # throw out vif > 4
-features = "+".join(['min_temp', 'cniederschlag',  'cbewoelkung', 'sonnenstunden'])
+features = "+".join(['min_temp', 'cniederschlag',  'cbewoelkung', 'csonnenstunden'])
 y, X = dmatrices('gesamt3 ~ ' + features, train, return_type='dataframe')
 vif = pd.DataFrame()
 vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
